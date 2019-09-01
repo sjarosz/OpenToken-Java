@@ -2,12 +2,13 @@ package idm.sso.tokens;
 
 import java.io.UnsupportedEncodingException;
 import java.security.AlgorithmParameters;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-
+import java.nio.ByteBuffer;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -87,7 +88,7 @@ public final class OTKCipher {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, this.keysize / 8);
+        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, this.keysize);
         try {
             secretKey = factory.generateSecret(spec);
         } catch (InvalidKeySpecException e) {
@@ -114,7 +115,7 @@ public final class OTKCipher {
         /* you can give whatever you want for password. This is for testing purpose */
         Cipher cipher;
         try {
-            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher = Cipher.getInstance(this.name);
 
             cipher.init(Cipher.ENCRYPT_MODE, secret);
             AlgorithmParameters params = cipher.getParameters();
@@ -148,6 +149,48 @@ public final class OTKCipher {
             e.printStackTrace();
         }
         return java.util.Base64.getEncoder().encodeToString(buffer);
+    }
+
+    public String decrypt(String password, String encryptedText) {
+
+        password = "2Federate";
+        Cipher cipher = null;
+
+        try {
+            cipher = Cipher.getInstance(this.name);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        // strip off the salt and iv
+        ByteBuffer buffer = ByteBuffer.wrap(java.util.Base64.getDecoder().decode(encryptedText));
+        byte[] salt = new byte[BLOCK_SIZE];
+        buffer.get(salt, 0, salt.length);
+        byte[] ivBlock = new byte[cipher.getBlockSize()];
+        buffer.get(ivBlock, 0, ivBlock.length);
+        byte[] encryptedTextBytes = new byte[buffer.capacity() - salt.length - ivBlock.length];
+
+        buffer.get(encryptedTextBytes);
+        // Deriving the key
+        SecretKeySpec secret = deriveKey(salt, "2Federate"); // for testing - aftwords pass a password in
+
+        try {
+            cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBlock));
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        byte[] decryptedTextBytes = null;
+        try {
+            decryptedTextBytes = cipher.doFinal(encryptedTextBytes);
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+
+        return new String(decryptedTextBytes);
     }
 
 }
