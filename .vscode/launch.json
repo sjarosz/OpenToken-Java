@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - JavaPasswordSecurity",
+            "request": "launch",
+            "mainClass": "idm.sso.tokens.JavaPasswordSecurity",
+            "projectName": "opentoken"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Main",
+            "request": "launch",
+            "mainClass": "idm.sso.tokens.Main",
+            "projectName": "opentoken"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - TestMain",
+            "request": "launch",
+            "mainClass": "idm.sso.tokens.TestMain",
+            "projectName": "opentoken"
+        },
+        {
+            "type": "java",
+            "name": "CodeLens (Launch) - Token",
+            "request": "launch",
+            "mainClass": "idm.sso.tokens.Token",
+            "projectName": "opentoken"
+        }
+    ]
+}
