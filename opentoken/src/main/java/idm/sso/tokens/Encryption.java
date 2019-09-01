@@ -12,7 +12,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class Encryption {
   public String encrypt(String word) throws Exception {
     byte[] ivBytes;
-    String password = "Hello";
+    String password = "2Federate";
     /* you can give whatever you want for password. This is for testing purpose */
     SecureRandom random = new SecureRandom();
     byte bytes[] = new byte[20];

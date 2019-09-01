@@ -1,11 +1,17 @@
 package idm.sso.tokens;
 
+import java.io.UnsupportedEncodingException;
 import java.security.AlgorithmParameters;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.InvalidParameterSpecException;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
@@ -46,10 +52,12 @@ public final class OTKCipher {
     Cipher mycipher;
 
     byte[] salt = new String("1234567890123456").getBytes(); // length = 16
-    int iterationCount = 1024;
+    static final int ITERATION_COUNT = 1024;
     int keyStrength = 256;
     SecretKey key;
     byte[] iv;
+
+    static final int BLOCK_SIZE = 20;
 
     int id;
     String name;
@@ -79,7 +87,7 @@ public final class OTKCipher {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65556, this.keysize / 8);
+        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, this.keysize / 8);
         try {
             secretKey = factory.generateSecret(spec);
         } catch (InvalidKeySpecException e) {
@@ -87,6 +95,59 @@ public final class OTKCipher {
             e.printStackTrace();
         }
         return new SecretKeySpec(secretKey.getEncoded(), this.cipher);
+    }
+
+    public byte[] generateSalt() {
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[BLOCK_SIZE];
+        random.nextBytes(bytes);
+        return bytes;
+    }
+
+    public String encrypt(String password, String data) {
+        byte[] ivBytes;
+        byte[] salt = generateSalt();
+        byte[] buffer = null;
+        // SecretKeySpec secret = deriveKey(salt,password);
+        SecretKeySpec secret = deriveKey(salt, "2Federate"); // for testing - aftwords pass a password in
+
+        /* you can give whatever you want for password. This is for testing purpose */
+        Cipher cipher;
+        try {
+            cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+
+            cipher.init(Cipher.ENCRYPT_MODE, secret);
+            AlgorithmParameters params = cipher.getParameters();
+            ivBytes = params.getParameterSpec(IvParameterSpec.class).getIV();
+            byte[] encryptedTextBytes = cipher.doFinal(data.getBytes("UTF-8"));
+            // prepend salt and iv
+            buffer = new byte[salt.length + ivBytes.length + encryptedTextBytes.length];
+            System.arraycopy(salt, 0, buffer, 0, salt.length);
+            System.arraycopy(ivBytes, 0, buffer, salt.length, ivBytes.length);
+            System.arraycopy(encryptedTextBytes, 0, buffer, salt.length + ivBytes.length, encryptedTextBytes.length);
+        } catch (NoSuchAlgorithmException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchPaddingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvalidParameterSpecException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalBlockSizeException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return java.util.Base64.getEncoder().encodeToString(buffer);
     }
 
 }

@@ -6,7 +6,7 @@ public class Test {
      */
     public static void main(String[] args) throws Exception {
         Encryption en = new Encryption();
-        String encryptedWord = en.encrypt("Test");
+        String encryptedWord = en.encrypt("2Federate");
         System.out.println("Encrypted word is : " + encryptedWord);
         Decryption de = new Decryption();
         System.out.println("Decrypted word is : " + de.decrypt(encryptedWord));

@@ -13,7 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 public class Decryption {
     @SuppressWarnings("static-access")
     public String decrypt(String encryptedText) throws Exception {
-        String password = "Hello";
+        String password = "2Federate";
         Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
         // strip off the salt and iv
         ByteBuffer buffer = ByteBuffer.wrap(java.util.Base64.getDecoder().decode(encryptedText));
