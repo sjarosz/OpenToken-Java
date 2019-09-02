@@ -50,14 +50,7 @@ public final class OTKCipher {
      * @param args The arguments of the program.
      */
 
-    Cipher mycipher;
-
-    byte[] salt = new String("1234567890123456").getBytes(); // length = 16
     static final int ITERATION_COUNT = 1024;
-    int keyStrength = 256;
-    SecretKey key;
-    byte[] iv;
-
     static final int BLOCK_SIZE = 20;
 
     int id;
@@ -109,8 +102,7 @@ public final class OTKCipher {
         byte[] ivBytes;
         byte[] salt = generateSalt();
         byte[] buffer = null;
-        // SecretKeySpec secret = deriveKey(salt,password);
-        SecretKeySpec secret = deriveKey(salt, "2Federate"); // for testing - aftwords pass a password in
+        SecretKeySpec secret = deriveKey(salt, password);
 
         /* you can give whatever you want for password. This is for testing purpose */
         Cipher cipher;
@@ -152,8 +144,6 @@ public final class OTKCipher {
     }
 
     public String decrypt(String password, String encryptedText) {
-
-        password = "2Federate";
         Cipher cipher = null;
 
         try {
@@ -173,7 +163,7 @@ public final class OTKCipher {
 
         buffer.get(encryptedTextBytes);
         // Deriving the key
-        SecretKeySpec secret = deriveKey(salt, "2Federate"); // for testing - aftwords pass a password in
+        SecretKeySpec secret = deriveKey(salt, password); // for testing - aftwords pass a password in
 
         try {
             cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBlock));
