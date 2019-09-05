@@ -42,13 +42,31 @@ public final class CipherSuite {
    * +----+--------+----------+------+---------+-----------+
    */
 
+  // TODO make test cipher work
+  // currently same as aes256
+  //////////////////////////////////
   // public static OTKCipher testCipher = new OTKCipher(0, "Null", "Null", 0,
   // "Null",
   // "Null", 0);
-  public static OTKCipher aes256 = new OTKCipher(1, "AES/CBC/PKCS5Padding", "AES", 256, "PKCS5", "CBC", 16);
-  public static OTKCipher aes128 = new OTKCipher(2, "AES/CBC/PKCS5Padding", "AES", 128, "PKCS5", "CBC", 16);
-  // public static OTKCipher 3des = new OTKCipher(3, "DESede/CBC/PKCS5Padding",
+
+  public static final OTKCipher test = new OTKCipher(0, "AES/CBC/PKCS5Padding", "AES", 256, "PKCS5", "CBC", 16);
+
+  public static final OTKCipher aes256 = new OTKCipher(1, "AES/CBC/PKCS5Padding", "AES", 256, "PKCS5", "CBC", 16);
+  public static final OTKCipher aes128 = new OTKCipher(2, "AES/CBC/PKCS5Padding", "AES", 128, "PKCS5", "CBC", 16);
+
+  // TODO make 3DES work
+  // currently same as aes128
+  //////////////////////////////////
+  // public static OTKCipher desede = new OTKCipher(3, "DESede/CBC/PKCS5Padding",
   // "DESede",
   // 168, "PKCS5", "CBC", 8);
+  public static final OTKCipher desede = new OTKCipher(3, "AES/CBC/PKCS5Padding", "AES", 128, "PKCS5", "CBC", 16);
 
+  // construct array of ciphers, defines the OTK ciphersuite
+  static private final OTKCipher otpCipherArray[] = { test, aes256, aes128, desede };
+
+  public static OTKCipher getTokenCipher(int index) {
+    // Retreive exact cipher per array index based upon extracted ciphersuite ID
+    return otpCipherArray[index];
+  }
 }

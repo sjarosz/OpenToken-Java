@@ -1,6 +1,7 @@
 package idm.sso.tokens;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -8,7 +9,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
-import java.nio.ByteBuffer;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -18,6 +18,11 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.security.spec.KeySpec;
+//import java.util.Base64;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.binary.Hex;
+
 
 /**
  * Set of JavaAPIs and CLI to implement
@@ -51,7 +56,7 @@ public final class OTKCipher {
      */
 
     static final int ITERATION_COUNT = 1024;
-    static final int BLOCK_SIZE = 20;
+    static final int BLOCK_SIZE = 16;
 
     int id;
     String name;
@@ -61,6 +66,16 @@ public final class OTKCipher {
     String mode;
     int ivlength;
 
+
+    public static String bytesToHex(byte[] in) {
+        final StringBuilder builder = new StringBuilder();
+        for(byte b : in) {
+            builder.append(String.format("%02x", b));
+        }
+        return builder.toString();
+    } 
+
+
     public OTKCipher(int id, String name, String cipher, int keysize, String padding, String mode, int ivlength) {
         this.id = id;
         this.name = name;
@@ -69,6 +84,25 @@ public final class OTKCipher {
         this.padding = padding;
         this.mode = mode;
         this.ivlength = ivlength;
+    }
+
+    public int getID() {
+        return this.id;
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public String getCipher() {
+        return this.cipher;
+    }
+
+    public byte[] generateSalt() {
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[BLOCK_SIZE];
+        random.nextBytes(bytes);
+        return bytes;
     }
 
     public SecretKeySpec deriveKey(byte[] salt, String password) {
@@ -89,13 +123,6 @@ public final class OTKCipher {
             e.printStackTrace();
         }
         return new SecretKeySpec(secretKey.getEncoded(), this.cipher);
-    }
-
-    public byte[] generateSalt() {
-        SecureRandom random = new SecureRandom();
-        byte bytes[] = new byte[BLOCK_SIZE];
-        random.nextBytes(bytes);
-        return bytes;
     }
 
     public String encrypt(String password, String data) {
@@ -140,12 +167,15 @@ public final class OTKCipher {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        return java.util.Base64.getEncoder().encodeToString(buffer);
+        Base64 b64 = new Base64();
+        return b64.encodeToString(buffer);
     }
 
-    public String decrypt(String password, String encryptedText) {
+    public String decrypt(String password, byte[] encryptedText, byte[] iv) {
+        SecretKey key = null;
+        SecretKeySpec secret = null;
         Cipher cipher = null;
-
+        Base64 b64 = new Base64();
         try {
             cipher = Cipher.getInstance(this.name);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
@@ -154,19 +184,162 @@ public final class OTKCipher {
         }
 
         // strip off the salt and iv
-        ByteBuffer buffer = ByteBuffer.wrap(java.util.Base64.getDecoder().decode(encryptedText));
-        byte[] salt = new byte[BLOCK_SIZE];
+ /**       
+        ByteBuffer buffer = ByteBuffer.wrap(encryptedText);
+
+        byte[] salt = new byte[16];
+        System.out.println(salt.length);
         buffer.get(salt, 0, salt.length);
         byte[] ivBlock = new byte[cipher.getBlockSize()];
+        
         buffer.get(ivBlock, 0, ivBlock.length);
+        System.out.println(ivBlock.toString());
         byte[] encryptedTextBytes = new byte[buffer.capacity() - salt.length - ivBlock.length];
 
         buffer.get(encryptedTextBytes);
         // Deriving the key
-        SecretKeySpec secret = deriveKey(salt, password); // for testing - aftwords pass a password in
+        secret = deriveKey(salt, password); // for testing - aftwords pass a password in
+ 
+        String passPhrase = "2Federate";
+        int iterationCount = 1000;
+        int keyStrength = 128;
+        SecretKey key;
+        Cipher dcipher;
+
+        System.out.println("here");
+        try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+            KeySpec spec = new PBEKeySpec(passPhrase.toCharArray(), salt, iterationCount, keyStrength);
+            SecretKey tmp = factory.generateSecret(spec);
+                    key = new SecretKeySpec(tmp.getEncoded(), "AES");
+                    dcipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            System.out.println("key: "+ key.toString()); 
+            System.out.println("key: "+ key.toString().getBytes());        
+
+            System.out.println("key: "+ bytesToHex(key.toString().getBytes()));  
+
+            System.out.println("key: "+ bytesToHex(key.toString().getBytes("UTF-8")));            
+
+      **/     
+      
+      try {
+            //SecretKeySpec secret2 = deriveKey(salt, password); // for testing - afterwords
+            // pass a password in
+            // decode the base64 encoded string
+            byte[] decodedKey = b64.decode("oBUkValAhbMDi9Lzq8/x4A==");
+    
+            System.out.println("TEST: " + bytesToHex(decodedKey));
+            // rebuild key using SecretKeySpec
+            //SecretKey secret3 = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+    
+
+
+secret = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+
+
+
+
+       
+        } catch (Exception e) {
+            System.out.println("ERROR");
+        }
+
+
 
         try {
-            cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(ivBlock));
+            // cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
+            cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
+            System.out.println("HERE");
+        } catch (InvalidKeyException | InvalidAlgorithmParameterException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace(
+
+            );
+        }
+        byte[] decryptedTextBytes = null;
+
+        ByteBuffer buffer = ByteBuffer.wrap(encryptedText);
+
+        System.out.println("before: "+ bytesToHex(encryptedText));
+        byte[] tmp = new byte[16+this.ivlength];
+        byte[] encryptedTextBytes = new byte[buffer.capacity() - 16 - this.ivlength];
+        buffer.get(tmp);
+        buffer.get(encryptedTextBytes);
+
+        System.out.println("after: "+ bytesToHex(encryptedTextBytes));
+
+        try {
+            decryptedTextBytes = cipher.doFinal(encryptedText);
+            //decryptedTextBytes = cipher.doFinal(encryptedTextBytes);
+        } catch (IllegalBlockSizeException e) {
+            e.printStackTrace();
+        } catch (BadPaddingException e) {
+            e.printStackTrace();
+        }
+
+System.out.println("decrypted: " + bytesToHex(decryptedTextBytes)+"\n");
+byte[] compressed = null;
+        //return new String(decryptedTextBytes);
+        try{
+            compressed= Hex.decodeHex("789c5dce310bc2301005e0bdffe5244d32c84106715528e8e496c62bb6d43b482ed49f6f1007717af078f03d16859126c914ace91d180fc65e8d45b747676f5dacfae0a3b0d24b43cd8c12cb5c90e3930a6ac2cbe17c42bb331813a63596d2eaa1c526f9de953a2e94342c421d37481824439c94f29fe6dd47cbc4b441659dd7df41efbf77de3e66363e060606060606");
+
+        } catch (Exception e){
+
+        }
+        System.out.println(compressed.toString());
+        return compressed.toString();
+    }
+
+    //////////////////////////////////////////////////////////
+
+    public String decrypt2(String password, byte[] encryptedText, byte[] iv) {
+        Cipher cipher = null;
+
+        try {
+            cipher = Cipher.getInstance(this.name);
+            System.out.println("block size: " + cipher.getBlockSize());
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        // strip off the salt and iv
+        System.out.println("x1");
+        Base64 b64=new Base64();
+        ByteBuffer buffer = ByteBuffer.wrap(b64.decode(encryptedText));
+
+        System.out.println("x2: " + buffer.toString());
+
+        byte[] salt = new byte[16];
+        System.out.println("X" + salt.length);
+        buffer.get(salt, 0, salt.length);
+        byte[] ivBlock = new byte[cipher.getBlockSize()];
+        buffer.get(ivBlock, 0, ivBlock.length);
+         System.out.println("X=" + ivBlock.toString());
+         System.out.println("X=" + iv.toString());
+         //byte[] encryptedTextBytes = encryptedText;
+        byte[] encryptedTextBytes = new byte[buffer.capacity() - salt.length - ivBlock.length];
+         //byte[] encryptedTextBytes = new byte[buffer.capacity() - salt.length];
+
+        System.out.println("eb: " + encryptedTextBytes.length);
+
+        buffer.get(encryptedTextBytes);
+        // Deriving the key
+        SecretKeySpec secret2 = deriveKey(salt, password); // for testing - afterwords
+        // pass a password in
+        // decode the base64 encoded string
+        byte[] decodedKey = b64.decode("oBUkValAhbMDi9Lzq8/x4A==");
+
+        System.out.println("TEST: " + decodedKey.toString());
+        // rebuild key using SecretKeySpec
+        SecretKey secret = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+        byte[] x = b64.encode(secret.getEncoded());
+        System.out.println("----" + x);
+
+        try {
+            // cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
+            cipher.init(Cipher.DECRYPT_MODE, secret, new IvParameterSpec(iv));
         } catch (InvalidKeyException | InvalidAlgorithmParameterException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
